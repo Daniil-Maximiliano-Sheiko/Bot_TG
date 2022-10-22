@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -81,6 +80,8 @@ const apiUrl = "https://api.telegram.org/" + "bot5504725655:AAHXPRXyT51v9bCRrrvA
 func IndexHandler(w http.ResponseWriter, _ *http.Request) {
 	var R MainStruct
 
+	Ping()
+
 	resp, err := http.Get(apiUrl + "/getMe")
 
 	if err != nil {
@@ -106,7 +107,7 @@ func IndexHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("Вывод успешно произведён!"))
 }
 
-var appeal = "БОООт"
+var appeal = ("Мой бот")
 
 func UpdateLoop() {
 	lastId := 0
@@ -131,67 +132,32 @@ func Update(lastId int) int {
 	if len(v.Result) > 0 {
 		ev := v.Result[len(v.Result)-1]
 		txt := strings.ToLower(ev.Message.Text)
-		// }
-		// if len(v.Result) > 0 {
-		// 	ev := v.Result[len(v.Result)-1]
-		// 	txt := ev.Message.Text
-		// 	if txt == "Ответ" {
-		// 		txtmsg := SendMessage{
-		// 			ChId:             ev.Message.Chat.Id,
-		// 			Text:             "Как ответить?",
-		// 			ReplyToMessageId: ev.Message.Id,
-		// 		}
+		if txt == "/privet" {
+			txtmsg := SendMessage{
+				ChId: ev.Message.Chat.Id,
+				Text: "Хай и "  + strconv.Itoa(ev.Message.Chat.Id),
+			}
 
-		// 		bytemsg, _ := json.Marshal(txtmsg)
-		// 		_, err = http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
-		// 		if err != nil {
-		// 			fmt.Println(err)
-		// 			return lastId
-		// 		} else {
-		// 			return ev.Id + 1
-		// 		}
-		// 	}
-		// }
-		// if len(v.Result) > 0 {
-		// 	ev := v.Result[len(v.Result)-1]
-		// 	txt := ev.Message.Text
-		// 	if txt == "Как дела?" {
-		// 		txtmsg := SendMessage{
-		// 			ChId:             ev.Message.Chat.Id,
-		// 			Text:             "Нормально",
-		// 			ReplyToMessageId: ev.Message.Id,
-		// 			ProtectContent: true,
-		// 		}
+			bytemsg, _ := json.Marshal(txtmsg)
+			_, err = http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
+			if err != nil {
+				fmt.Println(err)
+				return lastId
+			} else {
+				return ev.Id + 1
+			}
 
-		// 		bytemsg, _ := json.Marshal(txtmsg)
-		// 		_, err = http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
-		// 		if err != nil {
-		// 			fmt.Println(err)
-		// 			return lastId
-		// 		} else {
-		// 			return ev.Id + 1
-		// 		}
-		// ev := v.Result[len(v.Result)-1]
-		// txt := strings.ToLower(ev.Message.Text)
+		}
 
 		if strings.Split(txt, ", ")[0] == appeal {
-
 			switch strings.Split(strings.Split(txt, ", ")[1], ": ")[0] {
 			case "Привет":
 				{
-					return Privet(lastId, ev)
+					return Anek(lastId, ev)
 				}
 			case "Ответ":
 				{
 					return Otvet(lastId, ev)
-				}
-			case "измени обращение на":
-				{
-					if strings.Contains(txt, ": ") {
-						return ChangeName(lastId, ev, txt)
-					} else {
-						fmt.Println("error")
-					}
 				}
 			}
 		}
@@ -199,10 +165,10 @@ func Update(lastId int) int {
 	return lastId
 }
 
-func Privet(lastId int, ev UpdateStruct) int {
+func Anek(lastId int, ev UpdateStruct) int {
 	txtmsg := SendMessage{
-		ChId: ev.Message.Chat.Id,
-		Text: "Привет",
+		ChId:           ev.Message.Chat.Id,
+		Text:           "Привет, вот твой ID: " + strconv.Itoa(ev.Message.Chat.Id),
 		ProtectContent: true,
 	}
 
@@ -221,7 +187,7 @@ func Otvet(lastId int, ev UpdateStruct) int {
 		ChId:             ev.Message.Chat.Id,
 		Text:             "Как ответить?",
 		ReplyToMessageId: ev.Message.Id,
-		ProtectContent: true,
+		ProtectContent:   true,
 	}
 
 	bytemsg, _ := json.Marshal(txtmsg)
@@ -234,23 +200,36 @@ func Otvet(lastId int, ev UpdateStruct) int {
 	}
 }
 
-func ChangeName(lastId int, ev UpdateStruct, txt string) int {
-	newap := strings.Split(txt, "измени обращение на: ")
-	appeal = newap[1]
-	fmt.Println(appeal)
+// func ChangeName(lastId int, ev UpdateStruct, txt string) int {
+// 	newap := strings.Split(txt, "измени обращение на: ")
+// 	appeal = newap[1]
+// 	fmt.Println(appeal)
+// 	txtmsg := SendMessage{
+// 		ChId:           ev.Message.Chat.Id,
+// 		Text:           "Обращение изменено на: " + appeal,
+// 		ProtectContent: true,
+// 	}
+
+// 	bytemsg, _ := json.Marshal(txtmsg)
+// 	_, err := http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
+
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return lastId
+// 	} else {
+// 		return ev.Id + 1
+// 	}
+// }
+
+func Ping() {
 	txtmsg := SendMessage{
-		ChId: ev.Message.Chat.Id,
-		Text: "Обращение изменено на: " + appeal,
-		ProtectContent: true,
+		ChId: 520669485,
+		Text: "Страница посещена",
 	}
 
 	bytemsg, _ := json.Marshal(txtmsg)
 	_, err := http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
-
 	if err != nil {
 		fmt.Println(err)
-		return lastId
-	} else {
-		return ev.Id + 1
 	}
 }
