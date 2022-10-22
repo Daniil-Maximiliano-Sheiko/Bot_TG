@@ -37,8 +37,8 @@ type Result struct {
 }
 
 type Updateresponse struct {
-	Ok     bool          `json:"ok"`
-	Result []UpdateStuct `json:"result"`
+	Ok     bool           `json:"ok"`
+	Result []UpdateStruct `json:"result"`
 }
 
 type User struct {
@@ -68,7 +68,7 @@ type SendMessage struct {
 	ProtectContent   bool   `json:"protect_content"`
 }
 
-type UpdateStuct struct {
+type UpdateStruct struct {
 	Id                int     `json:"update_id"`
 	Message           Message `json:"message"`
 	EditedMessage     Message `json:"edited_message"`
@@ -128,105 +128,126 @@ func Update(lastId int) int {
 	if err != nil {
 		panic(err)
 	}
-
-	// if len(v.Result) > 0 {
-	// 	ev := v.Result[len(v.Result)-1]
-	// 	// for _, ev := range v.Result {
-	// 	txt := ev.Message.Text
-	// 	if txt == "Привет" {
-	// 		txtmsg := SendMessage{
-	// 			ChId: ev.Message.Chat.Id,
-	// 			Text: "И тебя туда же",
-	// 			ProtectContent: true,
-	// 		}
-
-	// 		bytemsg, _ := json.Marshal(txtmsg)
-	// 		_, err = http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
-	// 		if err != nil {
-	// 			fmt.Println(err)
-	// 			return lastId
-	// 		} else {
-	// 			return ev.Id + 1
-	// 		}
-	// 	}
-	// }
 	if len(v.Result) > 0 {
 		ev := v.Result[len(v.Result)-1]
-		txt := ev.Message.Text
-		if txt == "Ответ" {
-			txtmsg := SendMessage{
-				ChId:             ev.Message.Chat.Id,
-				Text:             "Как ответить?",
-				ReplyToMessageId: ev.Message.Id,
-			}
+		txt := strings.ToLower(ev.Message.Text)
+		// }
+		// if len(v.Result) > 0 {
+		// 	ev := v.Result[len(v.Result)-1]
+		// 	txt := ev.Message.Text
+		// 	if txt == "Ответ" {
+		// 		txtmsg := SendMessage{
+		// 			ChId:             ev.Message.Chat.Id,
+		// 			Text:             "Как ответить?",
+		// 			ReplyToMessageId: ev.Message.Id,
+		// 		}
 
-			bytemsg, _ := json.Marshal(txtmsg)
-			_, err = http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
-			if err != nil {
-				fmt.Println(err)
-				return lastId
-			} else {
-				return ev.Id + 1
-			}
-		}
-	}
-	if len(v.Result) > 0 {
-		ev := v.Result[len(v.Result)-1]
-		txt := ev.Message.Text
-		if txt == "Как дела?" {
-			txtmsg := SendMessage{
-				ChId:             ev.Message.Chat.Id,
-				Text:             "Нормально",
-				ReplyToMessageId: ev.Message.Id,
-				ProtectContent: true,
-			}
+		// 		bytemsg, _ := json.Marshal(txtmsg)
+		// 		_, err = http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
+		// 		if err != nil {
+		// 			fmt.Println(err)
+		// 			return lastId
+		// 		} else {
+		// 			return ev.Id + 1
+		// 		}
+		// 	}
+		// }
+		// if len(v.Result) > 0 {
+		// 	ev := v.Result[len(v.Result)-1]
+		// 	txt := ev.Message.Text
+		// 	if txt == "Как дела?" {
+		// 		txtmsg := SendMessage{
+		// 			ChId:             ev.Message.Chat.Id,
+		// 			Text:             "Нормально",
+		// 			ReplyToMessageId: ev.Message.Id,
+		// 			ProtectContent: true,
+		// 		}
 
-			bytemsg, _ := json.Marshal(txtmsg)
-			_, err = http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
-			if err != nil {
-				fmt.Println(err)
-				return lastId
-			} else {
-				return ev.Id + 1
-			}
-			if strings.Split(txt, ", ")[0] == appeal {
+		// 		bytemsg, _ := json.Marshal(txtmsg)
+		// 		_, err = http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
+		// 		if err != nil {
+		// 			fmt.Println(err)
+		// 			return lastId
+		// 		} else {
+		// 			return ev.Id + 1
+		// 		}
+		// ev := v.Result[len(v.Result)-1]
+		// txt := strings.ToLower(ev.Message.Text)
 
-				switch strings.Split(strings.Split(txt, ", ")[1], ": ")[0] {
-				case "Привет":
-					{
-						return Privet(lastId, ev)
-					}
-				case "сгенерируй число":
-					{
-						return RandGen(lastId, ev, txt)
-					}
-				case "измени обращение на":
-					{
-						if strings.Contains(txt, ": ") {
-							return ChangeName(lastId, ev, txt)
-						} else {
-							fmt.Println("error")
-						}
+		if strings.Split(txt, ", ")[0] == appeal {
+
+			switch strings.Split(strings.Split(txt, ", ")[1], ": ")[0] {
+			case "Привет":
+				{
+					return Privet(lastId, ev)
+				}
+			case "Ответ":
+				{
+					return Otvet(lastId, ev)
+				}
+			case "измени обращение на":
+				{
+					if strings.Contains(txt, ": ") {
+						return ChangeName(lastId, ev, txt)
+					} else {
+						fmt.Println("error")
 					}
 				}
-	
 			}
 		}
-		return lastId
 	}
+	return lastId
+}
 
 func Privet(lastId int, ev UpdateStruct) int {
-		txtmsg := SendMessage{
-			ChId: ev.Message.Chat.Id,
-			Text: "Привет",
-		}
-	
-		bytemsg, _ := json.Marshal(txtmsg)
-		_, err := http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
-		if err != nil {
-			fmt.Println(err)
-			return lastId
-		} else {
-			return ev.Id + 1
-		}
+	txtmsg := SendMessage{
+		ChId: ev.Message.Chat.Id,
+		Text: "Привет",
 	}
+
+	bytemsg, _ := json.Marshal(txtmsg)
+	_, err := http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
+	if err != nil {
+		fmt.Println(err)
+		return lastId
+	} else {
+		return ev.Id + 1
+	}
+}
+
+func Otvet(lastId int, ev UpdateStruct) int {
+	txtmsg := SendMessage{
+		ChId:             ev.Message.Chat.Id,
+		Text:             "Как ответить?",
+		ReplyToMessageId: ev.Message.Id,
+	}
+
+	bytemsg, _ := json.Marshal(txtmsg)
+	_, err := http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
+	if err != nil {
+		fmt.Println(err)
+		return lastId
+	} else {
+		return ev.Id + 1
+	}
+}
+
+func ChangeName(lastId int, ev UpdateStruct, txt string) int {
+	newap := strings.Split(txt, "измени обращение на: ")
+	appeal = newap[1]
+	fmt.Println(appeal)
+	txtmsg := SendMessage{
+		ChId: ev.Message.Chat.Id,
+		Text: "Обращение изменено на: " + appeal,
+	}
+
+	bytemsg, _ := json.Marshal(txtmsg)
+	_, err := http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
+
+	if err != nil {
+		fmt.Println(err)
+		return lastId
+	} else {
+		return ev.Id + 1
+	}
+}
