@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -105,6 +106,8 @@ func IndexHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("Вывод успешно произведён!"))
 }
 
+var appeal = "БОООт"
+
 func UpdateLoop() {
 	lastId := 0
 	for {
@@ -126,27 +129,27 @@ func Update(lastId int) int {
 		panic(err)
 	}
 
-	if len(v.Result) > 0 {
-		ev := v.Result[len(v.Result)-1]
-		// for _, ev := range v.Result {
-		txt := ev.Message.Text
-		if txt == "Привет" {
-			txtmsg := SendMessage{
-				ChId: ev.Message.Chat.Id,
-				Text: "И тебя туда же",
-				ProtectContent: true,
-			}
+	// if len(v.Result) > 0 {
+	// 	ev := v.Result[len(v.Result)-1]
+	// 	// for _, ev := range v.Result {
+	// 	txt := ev.Message.Text
+	// 	if txt == "Привет" {
+	// 		txtmsg := SendMessage{
+	// 			ChId: ev.Message.Chat.Id,
+	// 			Text: "И тебя туда же",
+	// 			ProtectContent: true,
+	// 		}
 
-			bytemsg, _ := json.Marshal(txtmsg)
-			_, err = http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
-			if err != nil {
-				fmt.Println(err)
-				return lastId
-			} else {
-				return ev.Id + 1
-			}
-		}
-	}
+	// 		bytemsg, _ := json.Marshal(txtmsg)
+	// 		_, err = http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
+	// 		if err != nil {
+	// 			fmt.Println(err)
+	// 			return lastId
+	// 		} else {
+	// 			return ev.Id + 1
+	// 		}
+	// 	}
+	// }
 	if len(v.Result) > 0 {
 		ev := v.Result[len(v.Result)-1]
 		txt := ev.Message.Text
@@ -186,7 +189,44 @@ func Update(lastId int) int {
 			} else {
 				return ev.Id + 1
 			}
+			if strings.Split(txt, ", ")[0] == appeal {
+
+				switch strings.Split(strings.Split(txt, ", ")[1], ": ")[0] {
+				case "Привет":
+					{
+						return Privet(lastId, ev)
+					}
+				case "сгенерируй число":
+					{
+						return RandGen(lastId, ev, txt)
+					}
+				case "измени обращение на":
+					{
+						if strings.Contains(txt, ": ") {
+							return ChangeName(lastId, ev, txt)
+						} else {
+							fmt.Println("error")
+						}
+					}
+				}
+	
+			}
+		}
+		return lastId
+	}
+
+func Privet(lastId int, ev UpdateStruct) int {
+		txtmsg := SendMessage{
+			ChId: ev.Message.Chat.Id,
+			Text: "Привет",
+		}
+	
+		bytemsg, _ := json.Marshal(txtmsg)
+		_, err := http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
+		if err != nil {
+			fmt.Println(err)
+			return lastId
+		} else {
+			return ev.Id + 1
 		}
 	}
-	return lastId
-}
