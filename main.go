@@ -203,6 +203,7 @@ func Privet(lastId int, ev UpdateStruct) int {
 	txtmsg := SendMessage{
 		ChId: ev.Message.Chat.Id,
 		Text: "Привет",
+		ProtectContent: true,
 	}
 
 	bytemsg, _ := json.Marshal(txtmsg)
@@ -220,6 +221,7 @@ func Otvet(lastId int, ev UpdateStruct) int {
 		ChId:             ev.Message.Chat.Id,
 		Text:             "Как ответить?",
 		ReplyToMessageId: ev.Message.Id,
+		ProtectContent: true,
 	}
 
 	bytemsg, _ := json.Marshal(txtmsg)
@@ -239,6 +241,7 @@ func ChangeName(lastId int, ev UpdateStruct, txt string) int {
 	txtmsg := SendMessage{
 		ChId: ev.Message.Chat.Id,
 		Text: "Обращение изменено на: " + appeal,
+		ProtectContent: true,
 	}
 
 	bytemsg, _ := json.Marshal(txtmsg)
