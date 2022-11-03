@@ -2,77 +2,37 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mattn/go-sqlite3"
+	"github.com/gorilla/mux"
 )
 
 func main() {
+	sql.Register("sqlite3_with_extensions",
+		&sqlite3.SQLiteDriver{
+			Extensions: []string{
+				"sqlite3_mod_regexp",
+			},
+		})
+
 	go UpdateLoop()
 	router := mux.NewRouter()
-	router.HandleFunc("/", IndexHandler)
-	http.ListenAndServe("localhost:8080", router)
-	//...
-}
-
-type MainStruct struct {
-	Ok     bool   `json:"ok"`
-	Result Result `json:"result"`
-}
-
-type Result struct {
-	Id       int    `ison:"id"`
-	Is_bot   bool   `json"id_bot"`
-	Name     string `json:"first_name"`
-	Username string `json:"username"`
-	Join     bool   `json:"can_join_groups"`
-	Read     bool   `json:"can_read_all_group_messages"`
-	Support  bool   `json:supports_inline_queries"`
-}
-
-type Updateresponse struct {
-	Ok     bool           `json:"ok"`
-	Result []UpdateStruct `json:"result"`
-}
-
-type User struct {
-	Id       int    `json:"id"`
-	Is_bot   bool   `json:"is_bot"`
-	Username string `json:"username"`
-	IsPrem   bool   `json:"is_prem"`
-}
-
-type Chat struct {
-	Id   int    `json:"id"`
-	Type string `json:"type"`
-}
-
-type Message struct {
-	Id   int    `json:"message_id"`
-	User User   `json:"from"`
-	Date int    `json:"date"`
-	Chat Chat   `json:"chat"`
-	Text string `json:"text"`
-}
-
-type SendMessage struct {
-	ChId             int    `json:"chat_id"`
-	Text             string `json:"text"`
-	ReplyToMessageId int    `json:"reply_to_message_id"`
-	ProtectContent   bool   `json:"protect_content"`
-}
-
-type UpdateStruct struct {
-	Id                int     `json:"update_id"`
-	Message           Message `json:"message"`
-	EditedMessage     Message `json:"edited_message"`
-	ChannelPost       Message `json:"channel_post"`
-	EditedChannelPost Message `json:"edited_channel_post"`
+	router.HandleFunc("/api", IndexHandler)
+	router.HandleFunc("/botname", NameHandler)
+	router.HandleFunc("/eventId", EvIdHandler)
+	router.HandleFunc("/lastId", LastIdHandler)
+	router.HandleFunc("/login", LogHandler)
+	router.HandleFunc("/register", RegHandler)
+	router.PathPrefix("/").Handler(http.FileServer((http.Dir("./static/"))))
+	http.ListenAndServe("localhost:8000", router)
 }
 
 const apiUrl = "https://api.telegram.org/" + "bot5504725655:AAHXPRXyT51v9bCRrrvAAdQRVZrBlNu5O2Y"
@@ -100,21 +60,92 @@ func IndexHandler(w http.ResponseWriter, _ *http.Request) {
 		panic(err)
 	}
 
+
 	w.Write([]byte(respReady))
+
 
 	println("Данные прочитаны")
 
 	w.Write([]byte("Вывод успешно произведён!"))
 }
 
-var appeal = ("Мой бот")
+func NameHandler(w http.ResponseWriter, _ *http.Request) {
+    db, err := sql.Open("sqlite3", "file:database.db")
+    if err != nil {
+        panic(err)
+    }
+    defer db.Close()
+    var gotname string
+    var resp sql.NullString // для результата
+    err = db.QueryRow("SELECT name FROM bot_status").Scan(&resp)
+    if err != nil {
+        fmt.Println(err)
+    }
+    if resp.Valid { // если результат валид
+        gotname = resp.String // берём оттуда обычный string
+    }
+    w.Write([]byte(gotname))
+}
+
+func EvIdHandler(w http.ResponseWriter, _ *http.Request) {
+	db, err := sql.Open("sqlite3", "db.sql")
+    if err != nil {
+        panic(err)
+    }
+    defer db.Close()
+    var goteventid string
+    var resp sql.NullString // для результата
+    err = db.QueryRow("SELECT id FROM bot_status").Scan(&resp)
+    if err != nil {
+        fmt.Println(err)
+    }
+    if resp.Valid { // если результат валид
+        goteventid = resp.String // берём оттуда обычный string
+    }
+    w.Write([]byte(goteventid))
+}
+
+func LastIdHandler(w http.ResponseWriter, _ *http.Request) {
+	db, err := sql.Open("sqlite3", "db.sql")
+    if err != nil {
+        panic(err)
+    }
+    defer db.Close()
+    var gotlastid string
+    var resp sql.NullString // для результата
+    err = db.QueryRow("SELECT lastid FROM bot_status").Scan(&resp)
+    if err != nil {
+        fmt.Println(err)
+    }
+    if resp.Valid { // если результат валид
+        gotlastid = resp.String // берём оттуда обычный string
+    }
+    w.Write([]byte(gotlastid))
+}
+
+func AuthCheck(w http.ResponseWriter, _ *http.Request) {}
+
+func LogHandler(w http.ResponseWriter, _ *http.Request) {}
+
+func RegHandler(w http.ResponseWriter, _ *http.Request) {}
+
+var appeal = ("GO")
 
 func UpdateLoop() {
-	lastId := 0
-	for {
-		lastId = Update(lastId)
-		time.Sleep(1 * time.Second)
-	}
+    db, err := sql.Open("sqlite3", "tgbot.db")
+    if err != nil {
+        panic(err)
+    }
+    defer db.Close() //закрывает коннект при закрытии программы
+    lastId := -1
+    for {
+        newId := Update(lastId)
+        if lastId != newId {
+            lastId = newId
+            db.Exec(`UPDATE `) // новый lastid в таблицу bot_status
+        }
+        time.Sleep(50 * time.Millisecond)
+    }
 }
 
 func Update(lastId int) int {
@@ -151,13 +182,21 @@ func Update(lastId int) int {
 
 		if strings.Split(txt, ", ")[0] == appeal {
 			switch strings.Split(strings.Split(txt, ", ")[1], ": ")[0] {
-			case "Привет":
+			case "привет":
 				{
 					return Anek(lastId, ev)
 				}
-			case "Ответ":
+			case "ответ":
 				{
 					return Otvet(lastId, ev)
+				}
+			case "измени обращение на":
+				{
+					if strings.Contains(txt, ": ") {
+						return ChangeName(lastId, ev, txt)
+					} else {
+						fmt.Println("error")
+					}
 				}
 			}
 		}
@@ -200,26 +239,26 @@ func Otvet(lastId int, ev UpdateStruct) int {
 	}
 }
 
-// func ChangeName(lastId int, ev UpdateStruct, txt string) int {
-// 	newap := strings.Split(txt, "измени обращение на: ")
-// 	appeal = newap[1]
-// 	fmt.Println(appeal)
-// 	txtmsg := SendMessage{
-// 		ChId:           ev.Message.Chat.Id,
-// 		Text:           "Обращение изменено на: " + appeal,
-// 		ProtectContent: true,
-// 	}
+func ChangeName(lastId int, ev UpdateStruct, txt string) int {
+	newap := strings.Split(txt, "измени обращение на: ")
+	appeal = newap[1]
+	fmt.Println(appeal)
+	txtmsg := SendMessage{
+		ChId:           ev.Message.Chat.Id,
+		Text:           "Обращение изменено на: " + appeal,
+		ProtectContent: true,
+	}
 
-// 	bytemsg, _ := json.Marshal(txtmsg)
-// 	_, err := http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
+	bytemsg, _ := json.Marshal(txtmsg)
+	_, err := http.Post(apiUrl+"/sendMessage", "application/json", bytes.NewReader(bytemsg))
 
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return lastId
-// 	} else {
-// 		return ev.Id + 1
-// 	}
-// }
+	if err != nil {
+		fmt.Println(err)
+		return lastId
+	} else {
+		return ev.Id + 1
+	}
+}
 
 func Ping() {
 	txtmsg := SendMessage{
